@@ -36,9 +36,13 @@ namespace Infrastructure.EntityConfiguration
             builder.Property(u => u.UltimoLogin).IsRequired(false);
 
             builder.Property(u => u.DataCriacao)
-                   .Metadata.SetDefaultValueSql("SYSDATETIME()");
+                   .IsRequired()
+                   .HasColumnType("datetime");
 
-            builder.Property(u => u.DataAtualizacao).IsRequired();
+            builder.Property(u => u.DataAtualizacao)
+                   .IsRequired()
+                    .HasColumnType("datetime");
+
             // --- Relacionamentos ---
             builder.HasMany(u => u.Projetos)
                    .WithOne(p => p.Usuario)
