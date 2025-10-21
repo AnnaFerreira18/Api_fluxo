@@ -15,5 +15,13 @@ namespace Application.Interfaces
         Task<UsuarioResponseDto> GetMeAsync();
         Task<UsuarioResponseDto> UpdateMeAsync(EditarUsuarioRequestDto request);
         Task DeleteMeAsync();
+
+        Task<bool> EmailJaExisteAsync(string email);
+        Task VerificarCodigoAsync(VerificarCodigoRequestDto request);
+
+        Task SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequestDto request);
+
+        Task<VerificarCodigoRedefinicaoResponseDto> VerificarCodigoRedefinicaoAsync(VerificarCodigoRedefinicaoRequestDto request);
+        Task RedefinirSenhaFinalAsync(string tokenTemporario, RedefinirSenhaFinalRequestDto request);
     }
 }

@@ -46,5 +46,11 @@ namespace Infrastructure.Repository
             _context.Usuarios.Remove(usuario);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<Usuario> GetByTelefoneAsync(string telefone)
+        {
+            return await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Telefone == telefone);
+        }
     }
 }

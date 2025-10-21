@@ -114,5 +114,109 @@ namespace Api.Controllers
             }
         }
 
+        [HttpGet("verificar-email")] 
+        [ProducesResponseType(200, Type = typeof(bool))]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> VerificarEmail([FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                return BadRequest(new { error = "O email é obrigatório." });
+            }
+
+            try
+            {
+                var emailExiste = await _usuarioService.EmailJaExisteAsync(email);
+
+                // Retornamos 200 OK com o booleano (true ou false) no corpo da resposta
+                return Ok(emailExiste);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Ocorreu um erro interno ao verificar o email." });
+            }
+        }
+
+        [HttpPost("verificar-codigo")]
+        public async Task<IActionResult> VerificarCodigo([FromBody] VerificarCodigoRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                await _usuarioService.VerificarCodigoAsync(request);
+                return Ok(new { message = "Email verificado com sucesso!" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("esqueci-senha")]
+        [ProducesResponseType(200)] 
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> EsqueciSenha([FromBody] EsqueciSenhaRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                await _usuarioService.SolicitarRedefinicaoSenhaAsync(request);
+
+                return Ok(new { message = "Se uma conta com este email ou telefone existir, um código de redefinição foi enviado." });
+            }
+            catch (Exception ex)
+            {
+ 
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("verificar-codigo-redefinicao")]
+        public async Task<IActionResult> VerificarCodigoRedefinicao([FromBody] VerificarCodigoRedefinicaoRequestDto request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            try
+            {
+                var response = await _usuarioService.VerificarCodigoRedefinicaoAsync(request);
+                return Ok(response); // Retorna 200 OK com o token temporário
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message }); 
+            }
+        }
+
+
+        [HttpPost("redefinir-senha")]
+        public async Task<IActionResult> RedefinirSenhaFinal([FromBody] RedefinirSenhaFinalRequestDto request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            // Extrair o token temporário do cabeçalho Authorization
+            string authorizationHeader = Request.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authorizationHeader) || !authorizationHeader.StartsWith("Bearer "))
+            {
+                return Unauthorized(new { error = "Token temporário não fornecido ou inválido." });
+            }
+            string tokenTemporario = authorizationHeader.Substring("Bearer ".Length).Trim();
+
+            try
+            {
+                await _usuarioService.RedefinirSenhaFinalAsync(tokenTemporario, request);
+                return Ok(new { message = "Senha redefinida com sucesso." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

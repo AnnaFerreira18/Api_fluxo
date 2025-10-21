@@ -17,5 +17,7 @@ namespace Domain.Interfaces
         Task UpdateAsync(Usuario usuario);
 
         Task DeleteAsync(Usuario usuario);
+
+        Task<Usuario> GetByTelefoneAsync(string telefone);
     }
 }
