@@ -29,7 +29,50 @@ namespace Application.Services
             _configuration = configuration;
         }
 
-        public async Task RegistrarAsync(RegistrarUsuarioRequestDto request)
+        //public async Task RegistrarAsync(RegistrarUsuarioRequestDto request)
+        //{
+        //    var usuarioExistente = await _usuarioRepository.GetByEmailAsync(request.Email);
+        //    if (usuarioExistente != null)
+        //    {
+        //        throw new Exception("Este email já está em uso.");
+        //    }
+
+        //    string senhaHash = BCrypt.Net.BCrypt.HashPassword(request.Senha);
+
+        //    var novoUsuario = new Usuario
+        //    {
+        //        IdUsuario = Guid.NewGuid(),
+        //        Nome = request.Nome,
+        //        Email = request.Email,
+        //        Senha = senhaHash,
+        //        Telefone = request.Telefone,
+        //        EmailVerificado = false,
+        //        DataCriacao = DateTime.Now,
+        //        DataAtualizacao = DateTime.Now
+        //    };
+
+        //    await _usuarioRepository.AddAsync(novoUsuario);
+
+        //    var codigo = new Random().Next(100000, 999999).ToString();
+
+        //    Console.WriteLine($"*** CÓDIGO DE VERIFICAÇÃO PARA {novoUsuario.Email}: {codigo} ***");
+
+        //    var codigoHash = BCrypt.Net.BCrypt.HashPassword(codigo);
+
+        //    // 4. Salvar o código no banco
+        //    var codigoTemporario = new CodigoTemporario
+        //    {
+        //        IdCodigoTemporario = Guid.NewGuid(),
+        //        IdUsuario = novoUsuario.IdUsuario,
+        //        TipoDeCodigo = "VERIFICACAO_EMAIL",
+        //        CodigoHash = codigoHash,
+        //        DataExpiracao = DateTime.Now.AddMinutes(15) // Código expira em 15 minutos
+        //    };
+
+        //    await _codigoRepo.AddAsync(codigoTemporario);
+        //}
+
+        public async Task<string> RegistrarAsync(RegistrarUsuarioRequestDto request)
         {
             var usuarioExistente = await _usuarioRepository.GetByEmailAsync(request.Email);
             if (usuarioExistente != null)
@@ -70,12 +113,14 @@ namespace Application.Services
             };
 
             await _codigoRepo.AddAsync(codigoTemporario);
+            return codigo;
         }
 
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
             var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
 
+            // 1. Verifica se usuário existe
             if (usuario == null)
             {
                 throw new Exception("Email inválido.");
@@ -85,8 +130,14 @@ namespace Application.Services
 
             if (!senhaCorreta)
             {
-                throw new Exception("Senha inválida.");
+                throw new Exception("senha inválida.");
             }
+
+            if (!usuario.EmailVerificado)
+            {
+                throw new Exception("Email não verificado. Por favor, verifique seu email antes de fazer login.");
+            }
+
 
             string token = _tokenService.GerarToken(usuario);
 
@@ -213,9 +264,52 @@ namespace Application.Services
             await _codigoRepo.UpdateAsync(codigoCorreto);
         }
 
-        public async Task SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequestDto request)
+        //public async Task SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequestDto request)
+        //{
+        //    // 1. Validar se pelo menos um campo foi enviado
+        //    if (string.IsNullOrEmpty(request.Email) && string.IsNullOrEmpty(request.Telefone))
+        //    {
+        //        throw new Exception("É necessário fornecer um email ou um telefone para redefinir a senha.");
+        //    }
+
+        //    // 2. Encontrar o usuário por email OU telefone
+        //    Usuario usuario = null;
+        //    if (!string.IsNullOrEmpty(request.Email))
+        //    {
+        //        usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
+        //    }
+        //    else if (!string.IsNullOrEmpty(request.Telefone))
+        //    {
+        //        usuario = await _usuarioRepository.GetByTelefoneAsync(request.Telefone);
+        //    }
+
+        //    if (usuario == null)
+        //    {
+        //        Console.WriteLine($"*** (Simulação) Solicitação de redefinição para {request.Email ?? request.Telefone}, mas o usuário não foi encontrado. Retornando 'OK' por segurança. ***");
+        //        return; // Sai do método sem fazer nada.
+        //    }
+
+        //    // 4. Se o usuário FOI encontrado, geramos o código
+        //    var codigo = new Random().Next(100000, 999999).ToString();
+        //    var codigoHash = BCrypt.Net.BCrypt.HashPassword(codigo);
+
+        //    // 5. Salvar o código no banco
+        //    var codigoTemporario = new CodigoTemporario
+        //    {
+        //        IdCodigoTemporario = Guid.NewGuid(),
+        //        IdUsuario = usuario.IdUsuario,
+        //        TipoDeCodigo = "REDEFINICAO_SENHA", 
+        //        CodigoHash = codigoHash,
+        //        DataExpiracao = DateTime.Now.AddMinutes(15) // Validade de 15 minutos
+        //    };
+
+        //    await _codigoRepo.AddAsync(codigoTemporario);
+
+        //    // 6. (Simulação) "Enviar" o código
+        //    Console.WriteLine($"*** CÓDIGO DE REDEFINIÇÃO DE SENHA PARA {usuario.Email}: {codigo} ***");
+        //}
+        public async Task<string?> SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequestDto request) 
         {
-            // 1. Validar se pelo menos um campo foi enviado
             if (string.IsNullOrEmpty(request.Email) && string.IsNullOrEmpty(request.Telefone))
             {
                 throw new Exception("É necessário fornecer um email ou um telefone para redefinir a senha.");
@@ -235,29 +329,27 @@ namespace Application.Services
             if (usuario == null)
             {
                 Console.WriteLine($"*** (Simulação) Solicitação de redefinição para {request.Email ?? request.Telefone}, mas o usuário não foi encontrado. Retornando 'OK' por segurança. ***");
-                return; // Sai do método sem fazer nada.
+                return null; // Sai do método sem fazer nada.
             }
 
             // 4. Se o usuário FOI encontrado, geramos o código
             var codigo = new Random().Next(100000, 999999).ToString();
             var codigoHash = BCrypt.Net.BCrypt.HashPassword(codigo);
 
-            // 5. Salvar o código no banco
             var codigoTemporario = new CodigoTemporario
             {
                 IdCodigoTemporario = Guid.NewGuid(),
                 IdUsuario = usuario.IdUsuario,
-                TipoDeCodigo = "REDEFINICAO_SENHA", 
+                TipoDeCodigo = "REDEFINICAO_SENHA",
                 CodigoHash = codigoHash,
-                DataExpiracao = DateTime.Now.AddMinutes(15) // Validade de 15 minutos
+                DataExpiracao = DateTime.Now.AddMinutes(15) 
             };
-
             await _codigoRepo.AddAsync(codigoTemporario);
 
-            // 6. (Simulação) "Enviar" o código
             Console.WriteLine($"*** CÓDIGO DE REDEFINIÇÃO DE SENHA PARA {usuario.Email}: {codigo} ***");
-        }
 
+            return codigo; 
+        }
         public async Task<VerificarCodigoRedefinicaoResponseDto> VerificarCodigoRedefinicaoAsync(VerificarCodigoRedefinicaoRequestDto request)
         {
             // 1. Validar e Encontrar Usuário (igual ao método antigo)
