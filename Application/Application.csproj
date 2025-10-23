@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <Folder Include="Commands\" />
+    <Folder Include="DTOs\Anotacao\" />
+    <Folder Include="DTOs\Tarefa\" />
     <Folder Include="Handlers\" />
   </ItemGroup>
 

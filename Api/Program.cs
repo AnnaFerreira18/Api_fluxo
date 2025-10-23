@@ -105,6 +105,8 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<ICodigoTemporarioRepository, CodigoTemporarioRepository>();
+builder.Services.AddScoped<IProjetoRepository, ProjetoRepository>();
+builder.Services.AddScoped<IProjetoService, ProjetoService>();
 
 
 // --- 2. Configuração do Pipeline HTTP  ---
