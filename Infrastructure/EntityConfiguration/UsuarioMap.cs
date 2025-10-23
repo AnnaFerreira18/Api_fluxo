@@ -41,7 +41,14 @@ namespace Infrastructure.EntityConfiguration
 
             builder.Property(u => u.DataAtualizacao)
                    .IsRequired()
-                    .HasColumnType("datetime");
+                   .HasColumnType("datetime");
+
+            builder.Property(u => u.ContadorFalhasLogin)
+                    .IsRequired()
+                    .HasDefaultValue(0); 
+
+            builder.Property(u => u.DataBloqueioTemporario)
+                   .IsRequired(false);
 
             // --- Relacionamentos ---
             builder.HasMany(u => u.Projetos)

@@ -24,5 +24,8 @@ namespace Application.Interfaces
         Task<string?> SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequestDto request);
         Task<VerificarCodigoRedefinicaoResponseDto> VerificarCodigoRedefinicaoAsync(VerificarCodigoRedefinicaoRequestDto request);
         Task RedefinirSenhaFinalAsync(string tokenTemporario, RedefinirSenhaFinalRequestDto request);
+
+        Task<string> ReenviarCodigoVerificacaoAsync(ReenviarCodigoRequestDto request);
+
     }
 }

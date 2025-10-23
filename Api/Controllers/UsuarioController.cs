@@ -79,6 +79,10 @@ namespace Api.Controllers
             }
             catch (Exception ex)
             {
+                if (ex.Message.StartsWith("Conta bloqueada"))
+                {
+                    return StatusCode(429, new { error = ex.Message }); 
+                }
 
                 return Unauthorized(new { error = ex.Message });
             }
@@ -281,6 +285,43 @@ namespace Api.Controllers
             }
             catch (Exception ex)
             {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
+
+        [HttpPost("reenviar-codigo-verificacao")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(400)]
+        public async Task<IActionResult> ReenviarCodigoVerificacao([FromBody] ReenviarCodigoRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                var codigoGerado = await _usuarioService.ReenviarCodigoVerificacaoAsync(request);
+
+                var responseMessage = "Se uma conta não verificada com este email existir, um novo código foi enviado.";
+
+                if (codigoGerado != null)
+                {
+                    return Ok(new
+                    {
+                        message = responseMessage,
+                        novoCodigoVerificacao = codigoGerado
+                    });
+                }
+                else
+                {
+                    // Se o usuário não foi encontrado ou já está verificado (e o serviço retornou null)
+                    return Ok(new { message = responseMessage });
+                }
+            }
+            catch (Exception ex)
+            {
+                // Captura o erro "Este email já foi verificado."
                 return BadRequest(new { error = ex.Message });
             }
         }

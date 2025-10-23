@@ -116,6 +116,37 @@ namespace Application.Services
             return codigo;
         }
 
+        //public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
+        //{
+        //    var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
+
+        //    // 1. Verifica se usuário existe
+        //    if (usuario == null)
+        //    {
+        //        throw new Exception("Email inválido.");
+        //    }
+
+        //    bool senhaCorreta = BCrypt.Net.BCrypt.Verify(request.Senha, usuario.Senha);
+
+        //    if (!senhaCorreta)
+        //    {
+        //        throw new Exception("senha inválida.");
+        //    }
+
+        //    if (!usuario.EmailVerificado)
+        //    {
+        //        throw new Exception("Email não verificado. Por favor, verifique seu email antes de fazer login.");
+        //    }
+
+
+        //    string token = _tokenService.GerarToken(usuario);
+
+        //    return new LoginResponseDto
+        //    {
+        //        Token = token
+        //    };
+        //}
+
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
             var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
@@ -126,25 +157,81 @@ namespace Application.Services
                 throw new Exception("Email inválido.");
             }
 
+            bool resetNecessario = false; 
+
+            if (usuario.DataBloqueioTemporario.HasValue)
+            {
+                if (usuario.DataBloqueioTemporario > DateTime.Now)
+                {
+                    TimeSpan tempoRestante = usuario.DataBloqueioTemporario.Value - DateTime.Now;
+                    throw new Exception($"Conta bloqueada temporariamente. Tente novamente em {Math.Ceiling(tempoRestante.TotalMinutes)} minutos.");
+                }
+                else
+                {
+                    // BLOQUEIO EXPIRADO: Prepara para resetar o contador e a data antes de continuar
+                    usuario.ContadorFalhasLogin = 0;
+                    usuario.DataBloqueioTemporario = null;
+                    resetNecessario = true; 
+                }
+            }
+
+            // 3. Verifica a senha
             bool senhaCorreta = BCrypt.Net.BCrypt.Verify(request.Senha, usuario.Senha);
 
-            if (!senhaCorreta)
+            if (senhaCorreta)
             {
-                throw new Exception("senha inválida.");
+                // 4a. Resetar o contador e o bloqueio (se já não foi feito acima)
+                if (usuario.ContadorFalhasLogin > 0 || usuario.DataBloqueioTemporario.HasValue || resetNecessario)
+                {
+                    usuario.ContadorFalhasLogin = 0;
+                    usuario.DataBloqueioTemporario = null;
+                    await _usuarioRepository.UpdateAsync(usuario); 
+                }
+
+                // 4b. Verifica se o email foi verificado
+                if (!usuario.EmailVerificado)
+                {
+                    throw new Exception("Email não verificado. Por favor, verifique seu email antes de fazer login.");
+                }
+
+                // 4c. Gera o token
+                string token = _tokenService.GerarToken(usuario);
+                return new LoginResponseDto { Token = token };
             }
-
-            if (!usuario.EmailVerificado)
+            else
             {
-                throw new Exception("Email não verificado. Por favor, verifique seu email antes de fazer login.");
+                // --- SENHA INCORRETA ---
+                // Se um reset foi necessário por expiração do bloqueio, salvamos ANTES de incrementar
+                if (resetNecessario)
+                {
+                    await _usuarioRepository.UpdateAsync(usuario);
+                }
+
+                // 5a. Incrementar o contador de falhas
+                usuario.ContadorFalhasLogin++;
+
+                // 5b. Verificar se atingiu o limite
+                int limiteTentativas = 3;
+                if (usuario.ContadorFalhasLogin >= limiteTentativas)
+                {
+                    int minutosBloqueio = 15;
+                    usuario.DataBloqueioTemporario = DateTime.Now.AddMinutes(minutosBloqueio);
+
+                    // Salva o contador incrementado E a data de bloqueio
+                    await _usuarioRepository.UpdateAsync(usuario);
+
+                    // Lança a exceção de conta bloqueada
+                    throw new Exception($"Conta bloqueada temporariamente por {minutosBloqueio} minutos devido a múltiplas tentativas falhadas.");
+                }
+                else
+                {
+                    // Apenas salva o contador incrementado (se não houver bloqueio)
+                    await _usuarioRepository.UpdateAsync(usuario);
+                }
+
+                // 5c. Lançar a exceção de senha inválida
+                throw new Exception("Senha inválida.");
             }
-
-
-            string token = _tokenService.GerarToken(usuario);
-
-            return new LoginResponseDto
-            {
-                Token = token
-            };
         }
         public async Task<UsuarioResponseDto> GetMeAsync()
         {
@@ -453,5 +540,41 @@ namespace Application.Services
                 throw new Exception(ex.Message); 
             }
         }
+
+        public async Task<string> ReenviarCodigoVerificacaoAsync(ReenviarCodigoRequestDto request)
+        {
+            var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
+
+            if (usuario == null)
+            {
+                Console.WriteLine($"*** (Simulação) Solicitação de reenvio de código para {request.Email}, mas o usuário não foi encontrado. Retornando null por segurança. ***");
+                return null;
+            }
+
+            if (usuario.EmailVerificado)
+            {
+                throw new Exception("Este email já foi verificado.");
+            }
+
+            var codigo = new Random().Next(100000, 999999).ToString();
+            var codigoHash = BCrypt.Net.BCrypt.HashPassword(codigo);
+
+            var codigoTemporario = new CodigoTemporario
+            {
+                IdCodigoTemporario = Guid.NewGuid(),
+                IdUsuario = usuario.IdUsuario,
+                TipoDeCodigo = "VERIFICACAO_EMAIL",
+                CodigoHash = codigoHash,
+                DataExpiracao = DateTime.UtcNow.AddMinutes(15) 
+            };
+            await _codigoRepo.AddAsync(codigoTemporario);
+
+            Console.WriteLine($"*** NOVO CÓDIGO DE VERIFICAÇÃO PARA {usuario.Email}: {codigo} ***");
+
+            // 6. Retornar o código (APENAS PARA DEV)
+            return codigo;
+        }
+
+
     }
 }

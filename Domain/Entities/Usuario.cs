@@ -18,6 +18,9 @@ namespace Domain.Entities
         public DateTime DataCriacao { get; set; }
         public DateTime DataAtualizacao { get; set; }
 
+        public int ContadorFalhasLogin { get; set; }
+        public DateTime? DataBloqueioTemporario { get; set; }
+
         public ICollection<Projeto> Projetos { get; set; } = new List<Projeto>();
         public ICollection<Tarefa> Tarefas { get; set; } = new List<Tarefa>();
         public ICollection<CodigoTemporario> CodigosTemporarios { get; set; } = new List<CodigoTemporario>();
