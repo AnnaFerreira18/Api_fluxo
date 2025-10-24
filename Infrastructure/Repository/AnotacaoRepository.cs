@@ -64,10 +64,21 @@ namespace Infrastructure.Repository
 
             return await _context.Anotacoes
                 .Include(a => a.Projeto) 
-                .Where(a => a.Deletado &&
-                            a.DataDeletado.HasValue &&
-                            a.DataDeletado.Value > tresDiasAtras &&
-                            a.Projeto.IdUsuario == userId) 
+                .Where(a =>
+                    // Condição 1: A anotação pertence ao usuário (via projeto pai)
+                    a.Projeto.IdUsuario == userId &&
+
+                    // Condição 2: A anotação está marcada como deletada recentemente
+                    a.Deletado &&
+                    a.DataDeletado.HasValue &&
+                    a.DataDeletado.Value > tresDiasAtras &&
+
+                    // --- CONDIÇÃO 3: O Projeto Pai AINDA É RECUPERÁVEL ---
+                    (
+                        !a.Projeto.Deletado || 
+                        (a.Projeto.DataDeletado.HasValue && a.Projeto.DataDeletado.Value > tresDiasAtras) 
+                    )
+                 )
                 .OrderByDescending(a => a.DataDeletado)
                 .ToListAsync();
         }

@@ -111,6 +111,7 @@ builder.Services.AddScoped<IAnotacaoRepository, AnotacaoRepository>();
 builder.Services.AddScoped<IAnotacaoService, AnotacaoService>();
 builder.Services.AddScoped<ITarefaRepository, TarefaRepository>();
 builder.Services.AddScoped<ITarefaService, TarefaService>();
+builder.Services.AddScoped<ILixeiraService, LixeiraService>();
 
 
 // --- 2. Configuração do Pipeline HTTP  ---

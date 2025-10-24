@@ -94,12 +94,13 @@ namespace Application.Services
         public async Task<AnotacaoResponseDto?> GetByIdAsync(Guid id)
         {
             var usuarioId = _userContextService.GetUserId();
+            var anotacao = await _anotacaoRepository.GetByIdAsync(id); 
 
-            var anotacao = await _anotacaoRepository.GetByIdAsync(id);
-
-            if (anotacao == null || anotacao.Projeto?.IdUsuario != usuarioId)
+            if (anotacao == null ||
+                anotacao.Projeto?.IdUsuario != usuarioId || 
+                anotacao.Projeto.Deletado) 
             {
-                return null;
+                return null; 
             }
 
             var responseDto = new AnotacaoResponseDto
@@ -170,25 +171,38 @@ namespace Application.Services
         public async Task<bool> RestaurarAsync(Guid id)
         {
             var usuarioId = _userContextService.GetUserId();
-
             var anotacao = await _anotacaoRepository.GetByIdEvenIfDeletedAsync(id);
+
+            if (anotacao == null || !anotacao.Deletado || !anotacao.DataDeletado.HasValue || anotacao.Projeto?.IdUsuario != usuarioId || anotacao.Projeto.Deletado == false)
+            {
+                return false;
+            }
 
             if (anotacao == null || !anotacao.Deletado || !anotacao.DataDeletado.HasValue || anotacao.Projeto?.IdUsuario != usuarioId)
             {
-                return false; 
+                return false;
             }
 
-            var prazoRestauracao = anotacao.DataDeletado.Value.AddDays(1);
-            if (DateTime.Now > prazoRestauracao)
+            var prazoAnotacao = anotacao.DataDeletado.Value.AddDays(3);
+            if (DateTime.Now > prazoAnotacao)
             {
-                Console.WriteLine($"Tentativa de restaurar anotação {id} fora do prazo."); 
-                return false; 
+                Console.WriteLine($"Tentativa de restaurar anotação {id} fora do prazo dela.");
+                return false;
             }
 
-            // Se chegou aqui, PODE RESTAURAR
+            if (anotacao.Projeto.Deletado && anotacao.Projeto.DataDeletado.HasValue)
+            {
+                var prazoProjeto = anotacao.Projeto.DataDeletado.Value.AddDays(3);
+                if (DateTime.Now > prazoProjeto)
+                {
+                    Console.WriteLine($"Tentativa de restaurar anotação {id} cujo projeto pai está fora do prazo.");
+                    return false; 
+                }
+            }
+
             anotacao.Deletado = false;
             anotacao.DataDeletado = null;
-            anotacao.DataAtualizacao = DateTime.UtcNow;
+            anotacao.DataAtualizacao = DateTime.Now;
 
             await _anotacaoRepository.UpdateAsync(anotacao);
             return true;
