@@ -180,21 +180,28 @@ namespace Application.Services
 
             if (senhaCorreta)
             {
-                // 4a. Resetar o contador e o bloqueio (se já não foi feito acima)
-                if (usuario.ContadorFalhasLogin > 0 || usuario.DataBloqueioTemporario.HasValue || resetNecessario)
+                usuario.UltimoLogin = DateTime.Now;
+
+                bool precisaResetar = usuario.ContadorFalhasLogin > 0 || usuario.DataBloqueioTemporario.HasValue || resetNecessario;
+
+                if (precisaResetar) 
                 {
                     usuario.ContadorFalhasLogin = 0;
                     usuario.DataBloqueioTemporario = null;
-                    await _usuarioRepository.UpdateAsync(usuario); 
+                    await _usuarioRepository.UpdateAsync(usuario);
+                }
+                else 
+                {
+                    await _usuarioRepository.UpdateAsync(usuario);
                 }
 
-                // 4b. Verifica se o email foi verificado
+
+                // 4. Verifica se o email foi verificado
                 if (!usuario.EmailVerificado)
                 {
                     throw new Exception("Email não verificado. Por favor, verifique seu email antes de fazer login.");
                 }
 
-                // 4c. Gera o token
                 string token = _tokenService.GerarToken(usuario);
                 return new LoginResponseDto { Token = token };
             }
