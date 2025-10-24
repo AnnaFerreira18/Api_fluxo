@@ -107,6 +107,10 @@ builder.Services.AddScoped<IUserContextService, UserContextService>();
 builder.Services.AddScoped<ICodigoTemporarioRepository, CodigoTemporarioRepository>();
 builder.Services.AddScoped<IProjetoRepository, ProjetoRepository>();
 builder.Services.AddScoped<IProjetoService, ProjetoService>();
+builder.Services.AddScoped<IAnotacaoRepository, AnotacaoRepository>();
+builder.Services.AddScoped<IAnotacaoService, AnotacaoService>();
+//builder.Services.AddScoped<ITarefaRepository, TarefaRepository>();
+//builder.Services.AddScoped<ITarefaService, TarefaService>();
 
 
 // --- 2. Configuração do Pipeline HTTP  ---

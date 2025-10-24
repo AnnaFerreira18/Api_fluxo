@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Infrastructure.Repository
+namespace Application.Interfaces
 {
-    public class TarefaRepository
+    public interface ITarefaService
     {
     }
 }
