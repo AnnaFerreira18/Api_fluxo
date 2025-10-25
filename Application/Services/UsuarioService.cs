@@ -19,14 +19,16 @@ namespace Application.Services
         private readonly IUserContextService _userContextService;
         private readonly ICodigoTemporarioRepository _codigoRepo;
         private readonly IConfiguration _configuration;
+        private readonly IEmailService _emailService;
 
-        public UsuarioService(IUsuarioRepository usuarioRepository, ITokenService tokenService, IUserContextService userContextService, ICodigoTemporarioRepository codigoRepo, IConfiguration configuration)
+        public UsuarioService(IUsuarioRepository usuarioRepository, ITokenService tokenService, IUserContextService userContextService, ICodigoTemporarioRepository codigoRepo, IConfiguration configuration, IEmailService emailService)
         {
             _usuarioRepository = usuarioRepository;
             _tokenService = tokenService;
             _userContextService = userContextService;
             _codigoRepo = codigoRepo;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         //public async Task RegistrarAsync(RegistrarUsuarioRequestDto request)
@@ -96,23 +98,42 @@ namespace Application.Services
 
             await _usuarioRepository.AddAsync(novoUsuario);
 
+            // Gerar código de 6 dígitos
             var codigo = new Random().Next(100000, 999999).ToString();
-
-            Console.WriteLine($"*** CÓDIGO DE VERIFICAÇÃO PARA {novoUsuario.Email}: {codigo} ***");
-
             var codigoHash = BCrypt.Net.BCrypt.HashPassword(codigo);
 
-            // 4. Salvar o código no banco
+            // Salvar o código no banco
             var codigoTemporario = new CodigoTemporario
             {
                 IdCodigoTemporario = Guid.NewGuid(),
                 IdUsuario = novoUsuario.IdUsuario,
                 TipoDeCodigo = "VERIFICACAO_EMAIL",
                 CodigoHash = codigoHash,
-                DataExpiracao = DateTime.Now.AddMinutes(15) // Código expira em 15 minutos
+                DataExpiracao = DateTime.Now.AddMinutes(15)
             };
-
             await _codigoRepo.AddAsync(codigoTemporario);
+
+
+            // Preparar e enviar o email
+            var assuntoEmail = "Bem-vindo ao Fluxo de Notas - Confirme seu Email";
+            // Criar corpo do email
+            var corpoEmail = $@"
+                <html>
+                <body>
+                    <h2>Olá {novoUsuario.Nome},</h2>
+                    <p>Obrigado por se registar no Fluxo de Notas!</p>
+                    <p>Seu código de verificação é: <strong>{codigo}</strong></p>
+                    <p>Este código é válido por 15 minutos.</p>
+                    <p>Se você não se registou, por favor ignore este email.</p>
+                    <br>
+                    <p>Atenciosamente,</p>
+                    <p>Equipe Fluxo de Notas</p>
+                </body>
+                </html>";
+
+            // Chamar o serviço de email
+            await _emailService.SendEmailAsync(novoUsuario.Email, assuntoEmail, corpoEmail);
+
             return codigo;
         }
 
