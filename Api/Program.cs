@@ -114,7 +114,7 @@ builder.Services.AddScoped<ITarefaService, TarefaService>();
 builder.Services.AddScoped<ILixeiraService, LixeiraService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
-
+builder.Services.AddScoped<ISmsService, SmsService>();
 // --- 2. Configuração do Pipeline HTTP  ---
 
 // Esta linha "fecha" o registo de serviços.

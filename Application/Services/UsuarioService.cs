@@ -20,8 +20,9 @@ namespace Application.Services
         private readonly ICodigoTemporarioRepository _codigoRepo;
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
+        private readonly ISmsService _smsService;
 
-        public UsuarioService(IUsuarioRepository usuarioRepository, ITokenService tokenService, IUserContextService userContextService, ICodigoTemporarioRepository codigoRepo, IConfiguration configuration, IEmailService emailService)
+        public UsuarioService(IUsuarioRepository usuarioRepository, ITokenService tokenService, IUserContextService userContextService, ICodigoTemporarioRepository codigoRepo, IConfiguration configuration, IEmailService emailService, ISmsService smsService)
         {
             _usuarioRepository = usuarioRepository;
             _tokenService = tokenService;
@@ -29,6 +30,7 @@ namespace Application.Services
             _codigoRepo = codigoRepo;
             _configuration = configuration;
             _emailService = emailService;
+            _smsService = smsService;
         }
 
         //public async Task RegistrarAsync(RegistrarUsuarioRequestDto request)
@@ -432,13 +434,17 @@ namespace Application.Services
 
             // 2. Encontrar o usuário por email OU telefone
             Usuario usuario = null;
+            bool usarSms = false;
+
             if (!string.IsNullOrEmpty(request.Email))
             {
                 usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
+                usarSms = false;
             }
             else if (!string.IsNullOrEmpty(request.Telefone))
             {
                 usuario = await _usuarioRepository.GetByTelefoneAsync(request.Telefone);
+                if (usuario != null) usarSms = true;
             }
 
             if (usuario == null)
@@ -461,7 +467,23 @@ namespace Application.Services
             };
             await _codigoRepo.AddAsync(codigoTemporario);
 
-            Console.WriteLine($"*** CÓDIGO DE REDEFINIÇÃO DE SENHA PARA {usuario.Email}: {codigo} ***");
+            string mensagemSms = $"Fluxo de Notas: Seu código de redefinição de senha é {codigo}. Expira em 15 min.";
+            string assuntoEmail = "Fluxo de Notas - Código de Redefinição de Senha";
+            string corpoEmail = $"<p>Olá {usuario.Nome},</p><p>Seu código para redefinir a senha é: <strong>{codigo}</strong></p><p>Expira em 15 minutos.</p>";
+
+            if (usarSms)
+            {
+
+                string numeroDestino = usuario.Telefone;
+
+                Console.WriteLine($"*** TENTANDO ENVIAR SMS CÓDIGO {codigo} PARA {numeroDestino} ***");
+                await _smsService.SendSmsAsync(numeroDestino, mensagemSms);
+            }
+            else
+            {
+                Console.WriteLine($"*** ENVIANDO EMAIL CÓDIGO {codigo} PARA {usuario.Email} ***");
+                await _emailService.SendEmailAsync(usuario.Email, assuntoEmail, corpoEmail);
+            }
 
             return codigo; 
         }

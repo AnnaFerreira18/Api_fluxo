@@ -10,7 +10,6 @@ namespace Application.Interfaces
 {
     public interface IUsuarioService
     {
-        //Task RegistrarAsync(RegistrarUsuarioRequestDto request);
         Task<string> RegistrarAsync(RegistrarUsuarioRequestDto request);
         Task<LoginResponseDto> LoginAsync(LoginRequestDto request);
         Task<UsuarioResponseDto> GetMeAsync();
@@ -20,7 +19,6 @@ namespace Application.Interfaces
         Task<bool> EmailJaExisteAsync(string email);
         Task VerificarCodigoAsync(VerificarCodigoRequestDto request);
 
-        //Task SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequestDto request);
         Task<string?> SolicitarRedefinicaoSenhaAsync(EsqueciSenhaRequestDto request);
         Task<VerificarCodigoRedefinicaoResponseDto> VerificarCodigoRedefinicaoAsync(VerificarCodigoRedefinicaoRequestDto request);
         Task RedefinirSenhaFinalAsync(string tokenTemporario, RedefinirSenhaFinalRequestDto request);
