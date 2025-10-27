@@ -50,7 +50,7 @@ namespace Application.Services
                 Subject = new ClaimsIdentity(claims),
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
-                Expires = DateTime.Now.AddHours(8), // Duração do token
+                Expires = DateTime.UtcNow.AddHours(8), // Duração do token
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key), // Usa a nossa chave secreta
                     SecurityAlgorithms.HmacSha256Signature // Algoritmo de assinatura
@@ -82,7 +82,7 @@ namespace Application.Services
                 Subject = new ClaimsIdentity(claims),
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
-                Expires = DateTime.Now.AddMinutes(10),
+                Expires = DateTime.UtcNow.AddMinutes(10),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature
