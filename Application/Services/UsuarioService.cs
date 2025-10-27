@@ -34,7 +34,7 @@ namespace Application.Services
         }
 
 
-        public async Task<string> RegistrarAsync(RegistrarUsuarioRequestDto request)
+        public async Task RegistrarAsync(RegistrarUsuarioRequestDto request)
         {
             var usuarioExistente = await _usuarioRepository.GetByEmailAsync(request.Email);
             if (usuarioExistente != null)
@@ -94,7 +94,6 @@ namespace Application.Services
             // Chamar o serviço de email
             await _emailService.SendEmailAsync(novoUsuario.Email, assuntoEmail, corpoEmail);
 
-            return codigo;
         }
 
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
@@ -176,6 +175,27 @@ namespace Application.Services
 
                     // Salva o contador incrementado E a data de bloqueio
                     await _usuarioRepository.UpdateAsync(usuario);
+
+                    try
+                    {
+                        var assunto = "Alerta de Segurança: Bloqueio Temporário da Conta Fluxo de Notas";
+                        var corpo = $@"
+                            <html><body>
+                            <h2>Olá {usuario.Nome},</h2>
+                            <p>Detectamos múltiplas tentativas falhadas de login na sua conta Fluxo de Notas.</p>
+                            <p>Como medida de segurança, a sua conta foi <strong>bloqueada temporariamente por {minutosBloqueio} minutos</strong>.</p>
+                            <p>Se não foi você quem tentou fazer login, recomendamos que redefina sua senha imediatamente através da opção ""Esqueci minha senha"" na tela de login.</p>
+                            <p>Se foi você, por favor, aguarde o período de bloqueio terminar antes de tentar novamente.</p>
+                            <p>Atenciosamente,<br/>Equipe Fluxo de Notas</p>
+                            </body></html>";
+                        await _emailService.SendEmailAsync(usuario.Email, assunto, corpo);
+                    }
+                    catch (Exception emailEx)
+                    {
+                        // Logar o erro do email, mas NÃO impedir o bloqueio da conta
+                        Console.WriteLine($"ERRO ao enviar email de notificação de bloqueio para {usuario.Email}: {emailEx.Message}");
+                        // Considerar usar um sistema de log mais robusto aqui (Serilog, NLog, etc.)
+                    }
 
                     // Lança a exceção de conta bloqueada
                     throw new Exception($"Conta bloqueada temporariamente por {minutosBloqueio} minutos devido a múltiplas tentativas falhadas.");
@@ -352,23 +372,35 @@ namespace Application.Services
 
             string mensagemSms = $"Fluxo de Notas: Seu código de redefinição de senha é {codigo}. Expira em 15 min.";
             string assuntoEmail = "Fluxo de Notas - Código de Redefinição de Senha";
-            string corpoEmail = $"<p>Olá {usuario.Nome},</p><p>Seu código para redefinir a senha é: <strong>{codigo}</strong></p><p>Expira em 15 minutos.</p>";
+            string corpoEmail = $@"
+                <html><body>
+                <p>Olá {usuario.Nome},</p>
+                <p>Seu código para redefinir a senha é: <strong>{codigo}</strong></p>
+                <p>Este código expira em 15 minutos.</p>
+                <p>Se você não solicitou esta redefinição, pode ignorar este email.</p>
+                <p>Atenciosamente,<br/>Equipe Fluxo de Notas</p>
+                </body></html>";
 
-            if (usarSms)
+            try
             {
+                if (usarSms)
+                {
+                    string numeroDestino = usuario.Telefone;
 
-                string numeroDestino = usuario.Telefone;
-
-                Console.WriteLine($"*** TENTANDO ENVIAR SMS CÓDIGO {codigo} PARA {numeroDestino} ***");
-                await _smsService.SendSmsAsync(numeroDestino, mensagemSms);
+                    await _smsService.SendSmsAsync(numeroDestino, mensagemSms);
+                    Console.WriteLine($"*** SMS de redefinição enviado para {numeroDestino} ***"); 
+                }
+                else
+                {
+                    await _emailService.SendEmailAsync(usuario.Email, assuntoEmail, corpoEmail);
+                    Console.WriteLine($"*** Email de redefinição enviado para {usuario.Email} ***");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine($"*** ENVIANDO EMAIL CÓDIGO {codigo} PARA {usuario.Email} ***");
-                await _emailService.SendEmailAsync(usuario.Email, assuntoEmail, corpoEmail);
+                Console.WriteLine($"ERRO ao enviar notificação de redefinição para {(usarSms ? usuario.Telefone : usuario.Email)}: {ex.Message}");
             }
-
-            return codigo; 
+            return usarSms ? codigo : null;
         }
         public async Task<VerificarCodigoRedefinicaoResponseDto> VerificarCodigoRedefinicaoAsync(VerificarCodigoRedefinicaoRequestDto request)
         {
@@ -474,14 +506,14 @@ namespace Application.Services
             }
         }
 
-        public async Task<string> ReenviarCodigoVerificacaoAsync(ReenviarCodigoRequestDto request)
+        public async Task ReenviarCodigoVerificacaoAsync(ReenviarCodigoRequestDto request)
         {
             var usuario = await _usuarioRepository.GetByEmailAsync(request.Email);
 
             if (usuario == null)
             {
                 Console.WriteLine($"*** (Simulação) Solicitação de reenvio de código para {request.Email}, mas o usuário não foi encontrado. Retornando null por segurança. ***");
-                return null;
+                return;
             }
 
             if (usuario.EmailVerificado)
@@ -502,10 +534,23 @@ namespace Application.Services
             };
             await _codigoRepo.AddAsync(codigoTemporario);
 
-            Console.WriteLine($"*** NOVO CÓDIGO DE VERIFICAÇÃO PARA {usuario.Email}: {codigo} ***");
+            var assuntoEmail = "Fluxo de Notas - Novo Código de Verificação";
+            var corpoEmail = $@"
+                <html><body>
+                <p>Olá {usuario.Nome},</p>
+                <p>Seu novo código de verificação é: <strong>{codigo}</strong></p>
+                <p>Este código expira em 15 minutos.</p>
+                <p>Atenciosamente,<br/>Equipe Fluxo de Notas</p>
+                </body></html>";
 
-            // 6. Retornar o código (APENAS PARA DEV)
-            return codigo;
+            try
+            {
+                await _emailService.SendEmailAsync(usuario.Email, assuntoEmail, corpoEmail);
+            }
+            catch (Exception emailEx)
+            {
+                Console.WriteLine($"ERRO ao reenviar email de verificação para {usuario.Email}: {emailEx.Message}");
+            }
         }
 
 

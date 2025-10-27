@@ -16,29 +16,6 @@ namespace Api.Controllers
             _usuarioService = usuarioService;
         }
 
-        // Endpoint: POST /api/usuarios/registrar
-        //[HttpPost("registrar")]
-        //public async Task<IActionResult> Registrar([FromBody] RegistrarUsuarioRequestDto request)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return BadRequest(ModelState);
-        //    }
-
-        //    try
-        //    {
-        //        await _usuarioService.RegistrarAsync(request);
-
-        //        // Idealmente, retornaria o usuário criado ou um link,
-        //        return StatusCode(201, new { message = "Usuário registrado com sucesso!" });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Se o serviço lançar uma exceção (ex: email duplicado),
-        //        return BadRequest(new { error = ex.Message });
-        //    }
-        //}
-
         [HttpPost("registrar")]
         public async Task<IActionResult> Registrar([FromBody] RegistrarUsuarioRequestDto request)
         {
@@ -50,13 +27,9 @@ namespace Api.Controllers
             try
             {
 
-                var codigoGerado = await _usuarioService.RegistrarAsync(request);
+                await _usuarioService.RegistrarAsync(request);
 
-                return StatusCode(201, new
-                {
-                    message = "Usuário registrado com sucesso! (Código retornado apenas para DEV)",
-                    codigoVerificacao = codigoGerado
-                });
+                return StatusCode(201, new { message = "Usuário registrado com sucesso! Verifique seu email para o código de ativação." });
             }
             catch (Exception ex)
             {
@@ -185,29 +158,6 @@ namespace Api.Controllers
             }
         }
 
-        //[HttpPost("esqueci-senha")]
-        //[ProducesResponseType(200)] 
-        //[ProducesResponseType(400)]
-        //public async Task<IActionResult> EsqueciSenha([FromBody] EsqueciSenhaRequestDto request)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return BadRequest(ModelState);
-        //    }
-
-        //    try
-        //    {
-        //        await _usuarioService.SolicitarRedefinicaoSenhaAsync(request);
-
-        //        return Ok(new { message = "Se uma conta com este email ou telefone existir, um código de redefinição foi enviado." });
-        //    }
-        //    catch (Exception ex)
-        //    {
-
-        //        return BadRequest(new { error = ex.Message });
-        //    }
-        //}
-
         [HttpPost("esqueci-senha")]
         [ProducesResponseType(200)]
         [ProducesResponseType(400)]
@@ -220,26 +170,20 @@ namespace Api.Controllers
 
             try
             {
-                // --- ALTERAÇÃO AQUI ---
-                // Captura o código retornado (pode ser null)
                 var codigoGerado = await _usuarioService.SolicitarRedefinicaoSenhaAsync(request);
 
-                // Monta a resposta
                 var responseMessage = "Se uma conta com este email ou telefone existir, um código de redefinição foi enviado.";
 
-                // Inclui o código na resposta APENAS SE ele foi gerado (para DEV)
-                // (LEMBRE-SE: INSEGURO PARA PRODUÇÃO!)
-                if (codigoGerado != null)
+                if (codigoGerado != null) 
                 {
                     return Ok(new
                     {
-                        message = responseMessage + " (Código retornado apenas para DEV)",
+                        message = responseMessage + " (Código retornado apenas para DEV via SMS)",
                         codigoRedefinicao = codigoGerado
                     });
                 }
-                else
+                else 
                 {
-                    // Se o usuário não foi encontrado, retorna apenas a mensagem genérica
                     return Ok(new { message = responseMessage });
                 }
             }
@@ -301,23 +245,11 @@ namespace Api.Controllers
 
             try
             {
-                var codigoGerado = await _usuarioService.ReenviarCodigoVerificacaoAsync(request);
+                await _usuarioService.ReenviarCodigoVerificacaoAsync(request);
 
                 var responseMessage = "Se uma conta não verificada com este email existir, um novo código foi enviado.";
 
-                if (codigoGerado != null)
-                {
-                    return Ok(new
-                    {
-                        message = responseMessage,
-                        novoCodigoVerificacao = codigoGerado
-                    });
-                }
-                else
-                {
-                    // Se o usuário não foi encontrado ou já está verificado (e o serviço retornou null)
-                    return Ok(new { message = responseMessage });
-                }
+                return Ok(new { message = responseMessage });
             }
             catch (Exception ex)
             {

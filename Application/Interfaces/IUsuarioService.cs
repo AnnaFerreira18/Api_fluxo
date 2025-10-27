@@ -10,7 +10,7 @@ namespace Application.Interfaces
 {
     public interface IUsuarioService
     {
-        Task<string> RegistrarAsync(RegistrarUsuarioRequestDto request);
+        Task RegistrarAsync(RegistrarUsuarioRequestDto request);
         Task<LoginResponseDto> LoginAsync(LoginRequestDto request);
         Task<UsuarioResponseDto> GetMeAsync();
         Task<UsuarioResponseDto> UpdateMeAsync(EditarUsuarioRequestDto request);
@@ -23,7 +23,7 @@ namespace Application.Interfaces
         Task<VerificarCodigoRedefinicaoResponseDto> VerificarCodigoRedefinicaoAsync(VerificarCodigoRedefinicaoRequestDto request);
         Task RedefinirSenhaFinalAsync(string tokenTemporario, RedefinirSenhaFinalRequestDto request);
 
-        Task<string> ReenviarCodigoVerificacaoAsync(ReenviarCodigoRequestDto request);
+        Task ReenviarCodigoVerificacaoAsync(ReenviarCodigoRequestDto request);
 
     }
 }
