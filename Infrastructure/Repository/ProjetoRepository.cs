@@ -58,7 +58,7 @@ namespace Infrastructure.Repository
 
         public async Task<IEnumerable<Projeto>> GetLixeiraByUserIdAsync(Guid userId)
         {
-            var tresDiasAtras = DateTime.Now.AddDays(-1);
+            var tresDiasAtras = DateTime.Now.AddDays(-3);
 
             // Busca projetos do usuário que estão Deletados
             // E cuja DataDeletado é MAIS RECENTE que 3 dias atrás

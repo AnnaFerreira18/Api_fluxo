@@ -59,7 +59,7 @@ namespace Infrastructure.Repository
 
         public async Task<IEnumerable<Tarefa>> GetLixeiraByUserIdAsync(Guid userId)
         {
-            var tresDiasAtras = DateTime.Now.AddDays(-1);
+            var tresDiasAtras = DateTime.Now.AddDays(-3);
 
             return await _context.Tarefas
                 .Where(t => t.IdUsuario == userId &&

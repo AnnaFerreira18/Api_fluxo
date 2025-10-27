@@ -412,7 +412,7 @@ namespace Application.Services
             if (usuario == null) throw new Exception("Código inválido ou expirado.");
 
             // 2. Validar Código (igual ao método antigo)
-            var codigosValidos = await _codigoRepo.GetCodigosValidosAsync(usuario.IdUsuario, "REDEFINICAO_SENHA", DateTime.UtcNow);
+            var codigosValidos = await _codigoRepo.GetCodigosValidosAsync(usuario.IdUsuario, "REDEFINICAO_SENHA", DateTime.Now);
             if (!codigosValidos.Any()) throw new Exception("Código inválido ou expirado.");
             CodigoTemporario codigoCorreto = null;
             foreach (var codigoDb in codigosValidos)
@@ -492,7 +492,7 @@ namespace Application.Services
                 string novaSenhaHash = BCrypt.Net.BCrypt.HashPassword(request.NovaSenha);
 
                 usuario.Senha = novaSenhaHash;
-                usuario.DataAtualizacao = DateTime.UtcNow;
+                usuario.DataAtualizacao = DateTime.Now;
                 await _usuarioRepository.UpdateAsync(usuario);
 
             }
@@ -530,7 +530,7 @@ namespace Application.Services
                 IdUsuario = usuario.IdUsuario,
                 TipoDeCodigo = "VERIFICACAO_EMAIL",
                 CodigoHash = codigoHash,
-                DataExpiracao = DateTime.UtcNow.AddMinutes(15) 
+                DataExpiracao = DateTime.Now.AddMinutes(15) 
             };
             await _codigoRepo.AddAsync(codigoTemporario);
 

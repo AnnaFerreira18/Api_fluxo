@@ -157,7 +157,7 @@ namespace Application.Services
             }
 
             // Verifica o prazo de 3 dias
-            var prazoRestauracao = projeto.DataDeletado.Value.AddDays(1);
+            var prazoRestauracao = projeto.DataDeletado.Value.AddDays(3);
             if (DateTime.Now > prazoRestauracao)
             {
                 // Já passou o prazo, não pode restaurar

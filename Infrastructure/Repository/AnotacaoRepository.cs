@@ -60,7 +60,7 @@ namespace Infrastructure.Repository
 
         public async Task<IEnumerable<Anotacao>> GetLixeiraByUserIdAsync(Guid userId)
         {
-            var tresDiasAtras = DateTime.Now.AddDays(-1);
+            var tresDiasAtras = DateTime.Now.AddDays(-3);
 
             return await _context.Anotacoes
                 .Include(a => a.Projeto) 

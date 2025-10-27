@@ -153,7 +153,7 @@ namespace Application.Services
                 return false; 
             }
 
-            var prazoRestauracao = tarefa.DataDeletado.Value.AddDays(1);
+            var prazoRestauracao = tarefa.DataDeletado.Value.AddDays(3);
             if (DateTime.Now > prazoRestauracao)
             {
                 Console.WriteLine($"Tentativa de restaurar tarefa {id} fora do prazo."); 
