@@ -139,6 +139,9 @@ namespace Application.Services
 
             await _tarefaRepository.UpdateAsync(tarefa);
 
+            // 2. ADICIONA O SALVAMENTO QUE FALTAVA
+            await _tarefaRepository.SaveChangesAsync();
+
             return true;
         }
 
@@ -164,7 +167,9 @@ namespace Application.Services
             tarefa.DataDeletado = null; 
             tarefa.DataAtualizacao = DateTime.Now;
 
-            await _tarefaRepository.UpdateAsync(tarefa); 
+            await _tarefaRepository.UpdateAsync(tarefa);
+            await _tarefaRepository.SaveChangesAsync();
+
             return true;
         }
         public async Task<IEnumerable<TarefaResponseDto>> GetLixeiraAsync()

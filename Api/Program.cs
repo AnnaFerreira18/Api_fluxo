@@ -128,7 +128,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Redireciona HTTP para HTTPS
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // Adiciona o CORS
 app.UseCors("AllowAll");

@@ -47,7 +47,7 @@ namespace Infrastructure.Repository
         {
 
             _context.Tarefas.Update(tarefa);
-            //await _context.SaveChangesAsync();
+             await _context.SaveChangesAsync();
         }
 
         public async Task<Tarefa?> GetByIdEvenIfDeletedAsync(Guid id, Guid userId)

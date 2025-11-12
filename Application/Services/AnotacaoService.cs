@@ -173,10 +173,6 @@ namespace Application.Services
             var usuarioId = _userContextService.GetUserId();
             var anotacao = await _anotacaoRepository.GetByIdEvenIfDeletedAsync(id);
 
-            if (anotacao == null || !anotacao.Deletado || !anotacao.DataDeletado.HasValue || anotacao.Projeto?.IdUsuario != usuarioId || anotacao.Projeto.Deletado == false)
-            {
-                return false;
-            }
 
             if (anotacao == null || !anotacao.Deletado || !anotacao.DataDeletado.HasValue || anotacao.Projeto?.IdUsuario != usuarioId)
             {
@@ -205,6 +201,8 @@ namespace Application.Services
             anotacao.DataAtualizacao = DateTime.Now;
 
             await _anotacaoRepository.UpdateAsync(anotacao);
+            await _anotacaoRepository.SaveChangesAsync();
+
             return true;
         }
 
